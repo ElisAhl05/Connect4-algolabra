@@ -1,0 +1,5 @@
+# Week 2 Report
+
+This week I have stood under very hard time constraints, so I have only been able to put a couple of hours of work into the project. The project is however almost up-and-running, showcasing a console interface where the player can play against himself. It resets whenever it detects a win. I also got into working on the heuristic function. I am not quite sure I understood what you meant with your comment on it, but I will be counting the number of 2-in-a-rows, 3-in-a-rows and 4-in-a-rows (though this last is unneccessary) and multiplying them with set factors to calculate a score. There is currently a bug in the heuristic function, though I will get it fixed very soon.
+
+The intent is to get the project to where I ended it last time next week, since I then am not under such time pressure. Once I have the heuristic function I will start working on implementing it in an AI opponent. I should also be able to look into testing and such within the week. Will see if I have time for improving the interface (currently invalid character inputs just crash the console).
