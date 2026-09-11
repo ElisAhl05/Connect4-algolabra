@@ -1,5 +1,7 @@
 #pragma once
+#include <iostream>
 #include <string>
+#define CONNECT4_DEBUG true
 
 namespace Connect4 {
 	class GameController {
@@ -34,6 +36,100 @@ namespace Connect4 {
 				return -1; // Invalid
 			}
 			return board[column][row];
+		}
+
+		unsigned int evalColor(int color) {
+			static const int singleScore = 0;
+			static const int doubleScore = 10;
+			static const int tripleScore = 100;
+			static const int quadScore   = 10000;
+
+			int streaksFound[4] = { 0, 0, 0, 0 }; // 0: single, 1: double, 2: triple, 3: quad
+			int streak = 0;
+
+			// check columns
+			for (int x = 0; x < cols; x++) {
+				for (int y = 0; y < rows; y++) {
+					if (getPiece(x, y) == color) {
+						streak++;
+					}
+					else {
+						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
+						streak = 0;
+					}
+				}
+				if (streak > 0 && streak <= 4) {
+					streaksFound[streak - 1]++;
+					streak = 0;
+				}
+			}
+
+			// check rows
+			for (int y = 0; y < rows; y++) {
+				for (int x = 0; x < cols; x++) {
+					if (getPiece(x, y) == color) {
+						streak++;
+					}
+					else {
+						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
+						streak = 0;
+					}
+				}
+				if (streak > 0 && streak <= 4) {
+					streaksFound[streak - 1]++;
+					streak = 0;
+				}
+			}
+			// check diagonals left-down to right-up
+			for (int x = 0; x < cols - 1; x++) { // when x = columns - 1, the diagonal is one block large and thus unneccessary.
+				int i = 0;
+				while (validPos(x + i, i)) {
+					if (getPiece(x + i, i) == color)
+						streak++;
+					else {
+						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
+						streak = 0;
+					}
+					i++;
+				}
+				if (streak > 0 && streak <= 4) {
+					streaksFound[streak - 1]++;
+					streak = 0;
+				}
+			}
+			for (int y = 1; y < rows - 1; y++) { // when y = rows - 1, the diagonal is one block large
+				int i = 0;
+				while (validPos(i, y + i)) {
+					if (getPiece(i, y + i) == color)
+						streak++;
+					else {
+						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
+						streak = 0;
+					}
+					i++;
+				}
+				if (streak > 0 && streak <= 4) {
+					streaksFound[streak - 1]++;
+					streak = 0;
+				}
+			}
+
+			if constexpr (CONNECT4_DEBUG) {
+				std::cout << "Streaks found for color " << color << ": ";
+				for (int i = 0; i < 4; i++) {
+					std::cout << streaksFound[i] << " ";
+				}
+				std::cout << std::endl;
+			}
+
+			return streaksFound[0] * singleScore
+				 + streaksFound[1] * doubleScore
+				 + streaksFound[2] * tripleScore
+				 + streaksFound[3] * quadScore;
+		}
+
+		inline int eval() {
+			return evalColor(1) - evalColor(2); // Player 1 score - Player 2 score
 		}
 
 	public:
@@ -96,6 +192,10 @@ namespace Connect4 {
 			if (inARow >= 4) return true;
 
 			return false;
+		}
+
+		int getEval() {
+			return eval();
 		}
 
 		std::string repr() { // will overload << in the future, did not get it working right now

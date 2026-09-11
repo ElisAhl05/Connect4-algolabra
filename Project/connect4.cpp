@@ -15,6 +15,7 @@ int main() {
 			std::cout << "Invalid move. Try again." << std::endl;
 			continue;
 		}
+		std::cout << "Eval: " << (controller.getEval() * (!controller.bTurn ? 1 : -1)) << std::endl;
 		if (controller.isWin(col)) {
 			std::cout << controller.repr() << std::endl;
 			std::cout << "Player " << (controller.bTurn ? 2 : 1) << " wins!" << std::endl;
