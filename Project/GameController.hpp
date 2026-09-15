@@ -80,9 +80,40 @@ namespace Connect4 {
 					streak = 0;
 				}
 			}
+			// check diagonals right-down to left-up
+			for (int x = 1; x < cols; x++) {
+				int i = 0;
+				streak = 0;
+				while (validPos(x - i, i)) {
+					if (getPiece(x - i, i) == color)
+						streak++;
+					else {
+						if (streak) streaksFound[streak - 1]++;
+						streak = 0;
+					}
+					i++;
+				}
+				if (streak) streaksFound[streak - 1]++;
+			}
+			int x = cols - 1;
+			for (int y = 1; y < rows - 1; y++) { // note the rows - 1 and the startX = 1: The bottom left and top right cornes cannot contain anything valuable
+				int i = 0;
+				streak = 0;
+				while (validPos(x - i, y + i)) {
+					if (getPiece(x - i, y + i) == color)
+						streak++;
+					else {
+						if (streak) streaksFound[streak - 1]++;
+						streak = 0;
+					}
+					i++;
+				}
+				if (streak) streaksFound[streak - 1]++;
+			}
 			// check diagonals left-down to right-up
 			for (int x = 0; x < cols - 1; x++) { // when x = columns - 1, the diagonal is one block large and thus unneccessary.
 				int i = 0;
+				streak = 0;
 				while (validPos(x + i, i)) {
 					if (getPiece(x + i, i) == color)
 						streak++;
@@ -99,6 +130,7 @@ namespace Connect4 {
 			}
 			for (int y = 1; y < rows - 1; y++) { // when y = rows - 1, the diagonal is one block large
 				int i = 0;
+				streak = 0;
 				while (validPos(i, y + i)) {
 					if (getPiece(i, y + i) == color)
 						streak++;
