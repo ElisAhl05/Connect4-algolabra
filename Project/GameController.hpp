@@ -39,7 +39,7 @@ namespace Connect4 {
 		}
 
 		unsigned int evalColor(int color) {
-			static const int singleScore = 0;
+			static const int singleScore = 0; // I count them as useless
 			static const int doubleScore = 10;
 			static const int tripleScore = 100;
 			static const int quadScore   = 10000;
@@ -193,6 +193,7 @@ namespace Connect4 {
 				inARow++;
 			}
 			if (inARow >= 4) return true;
+			inARow = 1;
 
 			// check horizontal
 			for (int x = origX - 1; x >= 0 && getPiece(x, origY) == color; x--) {
