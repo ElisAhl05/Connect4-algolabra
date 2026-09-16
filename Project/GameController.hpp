@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <map>
+#include <array>
 #define CONNECT4_DEBUG false
 
 /*
@@ -108,6 +110,15 @@ namespace Connect4 {
 			board[column][colHeights[column]] = 0; // Clear the piece
 			bTurn = !bTurn; // Switch back the turn
 		}
+
+		std::string const hash() { // returns a string representation of the board state for hashing purposes
+			char result[15] = { 0 };
+			for (int c = 0; c < cols; c++) {
+				result[c * 2] = '@' + board[c][0] + board[c][1] * 3 + board[c][2] * 9;
+				result[c * 2 + 1] = '@' + board[c][3] + board[c][4] * 3 + board[c][5] * 9;
+			}
+			return std::string(result);
+		}
 	};
 
 	class GameController {
@@ -116,11 +127,12 @@ namespace Connect4 {
 		int nTurn = 0;
 
 	private:
+		std::map<std::string, int> bestMoves;
+
 		void resetBoard() {
 			board = Board();
 			nTurn = 0;
 		}
-
 
 		bool isWin(int col, Board& checked_board) {
 			int inARow = 1;
@@ -305,19 +317,32 @@ namespace Connect4 {
 		minMaxResult minMax(Board& working_board, int depth, bool player, bool turn) {
 			static const int largeVal = 10000000;
 			static const int fourInARowScore = 100000;
-			static const int columnOrder[7] = { 3, 2, 4, 1, 5, 0, 6 };
+			static const std::array<int, 7> columnOrdersIfMapped[7] = {
+				{ 0, 3, 2, 4, 1, 5, 6 }, // If the board already has a best move stored (namely 0),
+				{ 1, 3, 2, 4, 5, 0, 6 }, // the first row will be used for ordering checks. If the best
+				{ 2, 3, 4, 1, 5, 0, 6 }, // move is 1, the second row, and so on.
+				{ 3, 2, 4, 1, 5, 0, 6 },
+				{ 4, 3, 2, 1, 5, 0, 6 },
+				{ 5, 3, 2, 4, 1, 0, 6 },
+				{ 6, 3, 2, 4, 1, 5, 0 }
+			};
 
 			if (depth == 0) {
 				return { eval(working_board, player), -1 };;
 			}
-			
+			auto hash_value = working_board.hash();
+			std::array<int, 7> priorityOrder = { 3, 2, 4, 1, 5, 0, 6 }; // default priority, starting in the middle
+			if (bestMoves.find(hash_value) != bestMoves.end()) { // this should be tested a bit more, it seems that the matches turn up one iteration too late.
+				priorityOrder = columnOrdersIfMapped[bestMoves[hash_value]];
+			}
 			if (turn == player) {
 				int maxScore = -largeVal;
 				int bestCol = -1;
-				for (int col : columnOrder) {
+				for (int col : priorityOrder) {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
+							bestMoves[working_board.hash()] = col;
 							return { fourInARowScore * (depth + 1), col }; // * (depth + 1) makes AI tend to closer wins 
 						}
 
@@ -329,15 +354,17 @@ namespace Connect4 {
 						}
 					}
 				}
+				bestMoves[hash_value] = bestCol; // Store the best move for this board state
 				return { maxScore, bestCol };
 			}
 			else {
 				int minScore = largeVal;
 				int bestCol = -1;
-				for (int col : columnOrder) {
+				for (int col : priorityOrder) {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
+							bestMoves[working_board.hash()] = col;
 							return { -fourInARowScore * (depth + 1), col }; // * (depth + 1) makes AI tend to closer wins 
 						}
 						auto score = minMax(working_board, depth - 1, player, !turn);
@@ -348,6 +375,7 @@ namespace Connect4 {
 						}
 					}
 				}
+				bestMoves[hash_value] = bestCol;
 				return { minScore, bestCol };
 			}
 
@@ -370,6 +398,7 @@ namespace Connect4 {
 		int getAIMove(int depth) {
 			auto result = minMax(board, depth, board.bTurn, board.bTurn);
 			std::cout << "AI evaluated score: " << result.score << std::endl;
+			bestMoves.clear(); // Clear the map of best moves
 			return result.bestCol;
 		}
 
