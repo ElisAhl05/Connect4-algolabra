@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <array>
+#include <chrono>
 #define CONNECT4_DEBUG false
 
 /*
@@ -408,10 +409,24 @@ namespace Connect4 {
 		}
 
 		int getAIMove(int depth) {
+			bestMoves.clear(); // Clear the map of best moves
 			auto result = minMax(board, depth, board.bTurn, board.bTurn, -100000000, 100000000);
 			std::cout << "AI evaluated score: " << result.score << std::endl;
-			bestMoves.clear(); // Clear the map of best moves
 			return result.bestCol;
+		}
+
+		int getAIMove(std::chrono::milliseconds timeLimit) {
+			minMaxResult bestResult = { -10000000, -1 };
+			auto start = std::chrono::high_resolution_clock::now();
+			int iterations = 0;
+			bestMoves.clear(); // Clear the map of best moves
+			while (std::chrono::high_resolution_clock::now() - start < timeLimit && (6 * 7 - nTurn - iterations) > 0) {
+				iterations++;
+				bestResult = minMax(board, iterations, board.bTurn, board.bTurn, -100000000, 100000000);
+			}
+			std::cout << "AI evaluated score: " << bestResult.score << std::endl;
+			std::cout << "AI did " << iterations << " iterations" << std::endl;
+			return bestResult.bestCol;
 		}
 
 		bool placePiece(int col) {
