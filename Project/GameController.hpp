@@ -314,7 +314,7 @@ namespace Connect4 {
 			int bestCol; // Perhaps the column isn't neccessary.
 		};
 
-		minMaxResult minMax(Board& working_board, int depth, bool player, bool turn) {
+		minMaxResult minMax(Board& working_board, int depth, bool player, bool turn, int alpha, int beta) {
 			static const int largeVal = 10000000;
 			static const int fourInARowScore = 100000;
 			static const std::array<int, 7> columnOrdersIfMapped[7] = {
@@ -336,47 +336,59 @@ namespace Connect4 {
 				priorityOrder = columnOrdersIfMapped[bestMoves[hash_value]];
 			}
 			if (turn == player) {
-				int maxScore = -largeVal;
+				int max_score = -largeVal;
 				int bestCol = -1;
 				for (int col : priorityOrder) {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
 							bestMoves[working_board.hash()] = col;
-							return { fourInARowScore * (depth + 1), col }; // * (depth + 1) makes AI tend to closer wins 
+							int score = fourInARowScore * (depth + 1);
+							alpha = alpha > score ? alpha : score; // Update alpha
+							return { score, col }; // * (depth + 1) makes AI tend to closer wins 
 						}
 
-						auto score = minMax(working_board, depth - 1, player, !turn);
+						auto score = minMax(working_board, depth - 1, player, !turn, alpha, beta);
 						working_board.undoMove(col);
-						if (score.score > maxScore) {
-							maxScore = score.score;
+						if (score.score > max_score) {
+							max_score = score.score;
 							bestCol = col;
+							alpha = alpha > max_score ? alpha : max_score;
+							if (max_score >= beta) { // Beta cut-off
+								break;
+							}
 						}
 					}
 				}
 				bestMoves[hash_value] = bestCol; // Store the best move for this board state
-				return { maxScore, bestCol };
+				return { max_score, bestCol };
 			}
 			else {
-				int minScore = largeVal;
+				int min_score = largeVal;
 				int bestCol = -1;
 				for (int col : priorityOrder) {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
 							bestMoves[working_board.hash()] = col;
-							return { -fourInARowScore * (depth + 1), col }; // * (depth + 1) makes AI tend to closer wins 
+							int score = -fourInARowScore * (depth + 1);
+							beta = beta < score ? beta : score; // Update beta
+							return { score, col }; // * (depth + 1) makes AI tend to closer wins 
 						}
-						auto score = minMax(working_board, depth - 1, player, !turn);
+						auto score = minMax(working_board, depth - 1, player, !turn, alpha, beta);
 						working_board.undoMove(col);
-						if (score.score < minScore) {
-							minScore = score.score;
+						if (score.score < min_score) {
+							min_score = score.score;
 							bestCol = col;
+							beta = beta < min_score ? beta : min_score;
+							if (min_score <= alpha) { // Alpha cut-off
+								break;
+							}
 						}
 					}
 				}
 				bestMoves[hash_value] = bestCol;
-				return { minScore, bestCol };
+				return { min_score, bestCol };
 			}
 
 		}
@@ -396,7 +408,7 @@ namespace Connect4 {
 		}
 
 		int getAIMove(int depth) {
-			auto result = minMax(board, depth, board.bTurn, board.bTurn);
+			auto result = minMax(board, depth, board.bTurn, board.bTurn, -100000000, 100000000);
 			std::cout << "AI evaluated score: " << result.score << std::endl;
 			bestMoves.clear(); // Clear the map of best moves
 			return result.bestCol;
