@@ -305,6 +305,7 @@ namespace Connect4 {
 		minMaxResult minMax(Board& working_board, int depth, bool player, bool turn) {
 			static const int largeVal = 10000000;
 			static const int fourInARowScore = 100000;
+			static const int columnOrder[7] = { 3, 2, 4, 1, 5, 0, 6 };
 
 			if (depth == 0) {
 				return { eval(working_board, player), -1 };;
@@ -313,7 +314,7 @@ namespace Connect4 {
 			if (turn == player) {
 				int maxScore = -largeVal;
 				int bestCol = -1;
-				for (int col = 0; col < cols; col++) {
+				for (int col : columnOrder) {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
@@ -333,7 +334,7 @@ namespace Connect4 {
 			else {
 				int minScore = largeVal;
 				int bestCol = -1;
-				for (int col = 0; col < cols; col++) {
+				for (int col : columnOrder) {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
