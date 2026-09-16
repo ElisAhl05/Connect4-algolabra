@@ -3,46 +3,123 @@
 #include <string>
 #define CONNECT4_DEBUG true
 
+/*
+Board:
+	static rows
+	static cols
+	turn
+
+	getPiece
+	isValidPos
+	addPiece
+	operator=
+
+Controller:
+	Board board
+
+	
+
+
+
+
+*/
+
 namespace Connect4 {
-	class GameController {
+	static const int rows = 6;
+	static const int cols = 7;
+
+	class Board {
 	public:
-		static const int rows = 6;
-		static const int cols = 7;
-
-		bool bTurn = true; // true for player 1, false for player 2
-		int nTurn = 0;
-
+		bool bTurn = 1; // 1 for player 1, 0 for player 2
 		int colHeights[cols] = { 0 }; // Track the height of each column
 		int board[cols][rows] = { 0 }; // 0 for empty, 1 for player 1, 2 for player 2
 
-	private:
-		void resetBoard() {
-			bTurn = true;
-			for (int c = 0; c < cols; c++) {
-				colHeights[c] = 0;
-				for (int r = 0; r < rows; r++) board[c][r] = 0;
-			}
-			nTurn = 0;
+		inline bool isValidColumn(int column) {
+			return (column >= 0) && (column < cols);
 		}
 
-		inline bool validPos(int column, int row) {
-			return (column >= 0) && (column < cols) && (row >= 0) && (row < rows);
+		inline bool isNotFullColumn(int column) {
+			return colHeights[column] < rows;
+		}
+
+		inline bool isValidPos(int column, int row) {
+			return (column >= 0) && (column < cols) && (row >= 0) && (row < colHeights[column]);
+		}
+
+		inline int getHeight(int column) {
+			return colHeights[column];
 		}
 
 		template <bool doCheck = false>
-		inline int getPiece(int column, int row) {
+		int getPiece(int column, int row) {
 			if constexpr (doCheck) {
-				if (validPos(column, row)) return board[column][row];
-				return -1; // Invalid
+				if (column >= 0 && column < cols && row >= 0 && row < colHeights[column]) {
+					return board[column][row];
+				}
+				return -1;
 			}
 			return board[column][row];
 		}
 
-		unsigned int evalColor(int color) {
+		template <bool doCheck = false>
+		bool addPiece(int column) { // returns false if the column is full or invalid, true if the piece was added successfully
+			if constexpr (doCheck) {
+				if (column >= 0 && column < cols && colHeights[column] < rows) {
+					board[column][colHeights[column]] = bTurn ? 1 : 2;
+					bTurn = !bTurn; // Switch 
+					colHeights[column]++;
+					return true;
+				}
+				return false; // Invalid
+			}
+			else {
+				board[column][colHeights[column]] = bTurn ? 1 : 2;
+				bTurn = !bTurn;
+				colHeights[column]++;
+				return true;
+			}
+		}
+
+		Board& operator=(const Board& other) {
+			if (this != &other) {
+				for (int c = 0; c < cols; c++) {
+					colHeights[c] = other.colHeights[c];
+					for (int r = 0; r < rows; r++) {
+						board[c][r] = other.board[c][r];
+					}
+				}
+				bTurn = other.bTurn;
+			}
+			return *this;
+		}
+
+		bool operator==(const Board& other) const {
+			for (int c = 0; c < cols; c++) {
+				if (colHeights[c] != other.colHeights[c]) return false;
+				for (int r = 0; r < rows; r++) {
+					if (board[c][r] != other.board[c][r]) return false;
+				}
+			}
+			return bTurn == other.bTurn;
+		}
+	};
+
+	class GameController {
+	public:
+		Board board;
+		int nTurn = 0;
+
+	private:
+		void resetBoard() {
+			board = Board();
+			nTurn = 0;
+		}
+
+		int evalColor(int color) {
 			static const int singleScore = 0; // I count them as useless
 			static const int doubleScore = 10;
 			static const int tripleScore = 100;
-			static const int quadScore   = 10000;
+			static const int quadScore = 10000;
 
 			int streaksFound[4] = { 0, 0, 0, 0 }; // 0: single, 1: double, 2: triple, 3: quad
 			int streak = 0;
@@ -50,7 +127,7 @@ namespace Connect4 {
 			// check columns
 			for (int x = 0; x < cols; x++) {
 				for (int y = 0; y < rows; y++) {
-					if (getPiece(x, y) == color) {
+					if (board.getPiece(x, y) == color) {
 						streak++;
 					}
 					else {
@@ -67,7 +144,7 @@ namespace Connect4 {
 			// check rows
 			for (int y = 0; y < rows; y++) {
 				for (int x = 0; x < cols; x++) {
-					if (getPiece(x, y) == color) {
+					if (board.getPiece(x, y) == color) {
 						streak++;
 					}
 					else {
@@ -84,8 +161,8 @@ namespace Connect4 {
 			for (int x = 1; x < cols; x++) {
 				int i = 0;
 				streak = 0;
-				while (validPos(x - i, i)) {
-					if (getPiece(x - i, i) == color)
+				while (board.isValidPos(x - i, i)) {
+					if (board.getPiece(x - i, i) == color)
 						streak++;
 					else {
 						if (streak) streaksFound[streak - 1]++;
@@ -99,8 +176,8 @@ namespace Connect4 {
 			for (int y = 1; y < rows - 1; y++) { // note the rows - 1 and the startX = 1: The bottom left and top right cornes cannot contain anything valuable
 				int i = 0;
 				streak = 0;
-				while (validPos(x - i, y + i)) {
-					if (getPiece(x - i, y + i) == color)
+				while (board.isValidPos(x - i, y + i)) {
+					if (board.getPiece(x - i, y + i) == color)
 						streak++;
 					else {
 						if (streak) streaksFound[streak - 1]++;
@@ -114,8 +191,8 @@ namespace Connect4 {
 			for (int x = 0; x < cols - 1; x++) { // when x = columns - 1, the diagonal is one block large and thus unneccessary.
 				int i = 0;
 				streak = 0;
-				while (validPos(x + i, i)) {
-					if (getPiece(x + i, i) == color)
+				while (board.isValidPos(x + i, i)) {
+					if (board.getPiece(x + i, i) == color)
 						streak++;
 					else {
 						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
@@ -131,8 +208,8 @@ namespace Connect4 {
 			for (int y = 1; y < rows - 1; y++) { // when y = rows - 1, the diagonal is one block large
 				int i = 0;
 				streak = 0;
-				while (validPos(i, y + i)) {
-					if (getPiece(i, y + i) == color)
+				while (board.isValidPos(i, y + i)) {
+					if (board.getPiece(i, y + i) == color)
 						streak++;
 					else {
 						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
@@ -155,9 +232,9 @@ namespace Connect4 {
 			}
 
 			return streaksFound[0] * singleScore
-				 + streaksFound[1] * doubleScore
-				 + streaksFound[2] * tripleScore
-				 + streaksFound[3] * quadScore;
+				+ streaksFound[1] * doubleScore
+				+ streaksFound[2] * tripleScore
+				+ streaksFound[3] * quadScore;
 		}
 
 		inline int eval() {
@@ -169,14 +246,16 @@ namespace Connect4 {
 
 		void reset() {
 			resetBoard();
+			nTurn = 0;
+		}
+
+		bool getTurn() {
+			return nTurn % 2 == 0; // true for player 1, false for player 2
 		}
 
 		bool placePiece(int col) {
-			if (col >= 0 && col < cols && colHeights[col] < rows) {
-				board[col][colHeights[col]] = bTurn ? 1 : 2;
-				colHeights[col]++;
-
-				bTurn = !bTurn;
+			if (board.addPiece<true>(col)) {
+				nTurn++;
 				return true;
 			}
 			return false; // Invalid
@@ -185,41 +264,41 @@ namespace Connect4 {
 		bool isWin(int col) {
 			int inARow = 1;
 			int origX = col;
-			int origY = colHeights[col] - 1;
-			int color = getPiece(origX, origY);
+			int origY = board.getHeight(col) - 1;
+			int color = board.getPiece(origX, origY);
 
 			// check vertical
-			for (int y = origY - 1; y >= 0 && getPiece(origX, y) == color; y--) {
+			for (int y = origY - 1; y >= 0 && board.getPiece<true>(origX, y) == color; y--) {
 				inARow++;
 			}
 			if (inARow >= 4) return true;
-			inARow = 1;
 
 			// check horizontal
-			for (int x = origX - 1; x >= 0 && getPiece(x, origY) == color; x--) {
+			inARow = 1;
+			for (int x = origX - 1; x >= 0 && board.getPiece<true>(x, origY) == color; x--) {
 				inARow++;
 			}
-			for (int x = origX + 1; x < cols && getPiece(x, origY) == color; x++) {
+			for (int x = origX + 1; x < cols && board.getPiece<true>(x, origY) == color; x++) {
 				inARow++;
 			}
 			if (inARow >= 4) return true;
 
 			// check diagonal (top-left to bottom-right)
 			inARow = 1;
-			for (int x = origX - 1, y = origY - 1; x >= 0 && y >= 0 && getPiece(x, y) == color; x--, y--) {
+			for (int x = origX - 1, y = origY + 1; x >= 0 && y >= 0 && board.getPiece<true>(x, y) == color; x--, y++) {
 				inARow++;
 			}
-			for (int x = origX + 1, y = origY + 1; x < cols && y < rows && getPiece(x, y) == color; x++, y++) {
+			for (int x = origX + 1, y = origY - 1; x < cols && y < rows && board.getPiece<true>(x, y) == color; x++, y--) {
 				inARow++;
 			}
 			if (inARow >= 4) return true;
 
 			// check other diagonal (top-right to bottom-left)
 			inARow = 1;
-			for (int x = origX - 1, y = origY + 1; x >= 0 && y < rows && getPiece(x, y) == color; x--, y--) {
+			for (int x = origX + 1, y = origY + 1; x >= 0 && y < rows && board.getPiece<true>(x, y) == color; x++, y++) {
 				inARow++;
 			}
-			for (int x = origX + 1, y = origY - 1; x < cols && y >= 0 && getPiece(x, y) == color; x++, y++) {
+			for (int x = origX - 1, y = origY - 1; x < cols && y >= 0 && board.getPiece<true>(x, y) == color; x--, y--) {
 				inARow++;
 			}
 			if (inARow >= 4) return true;
@@ -257,7 +336,7 @@ namespace Connect4 {
 
 			for (int r = rows - 1; r >= 0; --r) {
 				for (int c = 0; c < cols; ++c) {
-					result[getPos(r, c)] = symbols[board[c][r]];
+					result[getPos(r, c)] = symbols[board.getPiece(c, r)];
 				}
 				result[getPos(r, -1)] = '|';
 				result[getPos(r, cols)] = '|';
