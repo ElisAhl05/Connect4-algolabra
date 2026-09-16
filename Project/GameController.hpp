@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
-#define CONNECT4_DEBUG true
+#define CONNECT4_DEBUG false
 
 /*
 Board:
@@ -102,6 +102,12 @@ namespace Connect4 {
 			}
 			return bTurn == other.bTurn;
 		}
+
+		void undoMove(int column) {
+			colHeights[column]--;
+			board[column][colHeights[column]] = 0; // Clear the piece
+			bTurn = !bTurn; // Switch back the turn
+		}
 	};
 
 	class GameController {
@@ -115,7 +121,53 @@ namespace Connect4 {
 			nTurn = 0;
 		}
 
-		int evalColor(int color) {
+
+		bool isWin(int col, Board& checked_board) {
+			int inARow = 1;
+			int origX = col;
+			int origY = checked_board.getHeight(col) - 1;
+			int color = checked_board.getPiece(origX, origY);
+
+			// check vertical
+			for (int y = origY - 1; y >= 0 && checked_board.getPiece<true>(origX, y) == color; y--) {
+				inARow++;
+			}
+			if (inARow >= 4) return true;
+
+			// check horizontal
+			inARow = 1;
+			for (int x = origX - 1; x >= 0 && checked_board.getPiece<true>(x, origY) == color; x--) {
+				inARow++;
+			}
+			for (int x = origX + 1; x < cols && checked_board.getPiece<true>(x, origY) == color; x++) {
+				inARow++;
+			}
+			if (inARow >= 4) return true;
+
+			// check diagonal (top-left to bottom-right)
+			inARow = 1;
+			for (int x = origX - 1, y = origY + 1; x >= 0 && y >= 0 && checked_board.getPiece<true>(x, y) == color; x--, y++) {
+				inARow++;
+			}
+			for (int x = origX + 1, y = origY - 1; x < cols && y < rows && checked_board.getPiece<true>(x, y) == color; x++, y--) {
+				inARow++;
+			}
+			if (inARow >= 4) return true;
+
+			// check other diagonal (top-right to bottom-left)
+			inARow = 1;
+			for (int x = origX + 1, y = origY + 1; x >= 0 && y < rows && checked_board.getPiece<true>(x, y) == color; x++, y++) {
+				inARow++;
+			}
+			for (int x = origX - 1, y = origY - 1; x < cols && y >= 0 && checked_board.getPiece<true>(x, y) == color; x--, y--) {
+				inARow++;
+			}
+			if (inARow >= 4) return true;
+
+			return false;
+		}
+
+		int evalColor(int color, Board& evaled_board) {
 			static const int singleScore = 0; // I count them as useless
 			static const int doubleScore = 10;
 			static const int tripleScore = 100;
@@ -127,7 +179,7 @@ namespace Connect4 {
 			// check columns
 			for (int x = 0; x < cols; x++) {
 				for (int y = 0; y < rows; y++) {
-					if (board.getPiece(x, y) == color) {
+					if (evaled_board.getPiece(x, y) == color) {
 						streak++;
 					}
 					else {
@@ -144,7 +196,7 @@ namespace Connect4 {
 			// check rows
 			for (int y = 0; y < rows; y++) {
 				for (int x = 0; x < cols; x++) {
-					if (board.getPiece(x, y) == color) {
+					if (evaled_board.getPiece(x, y) == color) {
 						streak++;
 					}
 					else {
@@ -161,8 +213,8 @@ namespace Connect4 {
 			for (int x = 1; x < cols; x++) {
 				int i = 0;
 				streak = 0;
-				while (board.isValidPos(x - i, i)) {
-					if (board.getPiece(x - i, i) == color)
+				while (evaled_board.isValidPos(x - i, i)) {
+					if (evaled_board.getPiece(x - i, i) == color)
 						streak++;
 					else {
 						if (streak) streaksFound[streak - 1]++;
@@ -176,8 +228,8 @@ namespace Connect4 {
 			for (int y = 1; y < rows - 1; y++) { // note the rows - 1 and the startX = 1: The bottom left and top right cornes cannot contain anything valuable
 				int i = 0;
 				streak = 0;
-				while (board.isValidPos(x - i, y + i)) {
-					if (board.getPiece(x - i, y + i) == color)
+				while (evaled_board.isValidPos(x - i, y + i)) {
+					if (evaled_board.getPiece(x - i, y + i) == color)
 						streak++;
 					else {
 						if (streak) streaksFound[streak - 1]++;
@@ -191,8 +243,8 @@ namespace Connect4 {
 			for (int x = 0; x < cols - 1; x++) { // when x = columns - 1, the diagonal is one block large and thus unneccessary.
 				int i = 0;
 				streak = 0;
-				while (board.isValidPos(x + i, i)) {
-					if (board.getPiece(x + i, i) == color)
+				while (evaled_board.isValidPos(x + i, i)) {
+					if (evaled_board.getPiece(x + i, i) == color)
 						streak++;
 					else {
 						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
@@ -208,8 +260,8 @@ namespace Connect4 {
 			for (int y = 1; y < rows - 1; y++) { // when y = rows - 1, the diagonal is one block large
 				int i = 0;
 				streak = 0;
-				while (board.isValidPos(i, y + i)) {
-					if (board.getPiece(i, y + i) == color)
+				while (evaled_board.isValidPos(i, y + i)) {
+					if (evaled_board.getPiece(i, y + i) == color)
 						streak++;
 					else {
 						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
@@ -238,8 +290,69 @@ namespace Connect4 {
 		}
 
 		inline int eval() {
-			return evalColor(1) - evalColor(2); // Player 1 score - Player 2 score
+			return evalColor(1, board) - evalColor(2, board); // Player 1 score - Player 2 score
 		}
+
+		inline int eval(Board& evaled_board, bool player = 1) {
+			return evalColor(2 - player, evaled_board) - evalColor(1 + player, evaled_board);
+		}
+
+		struct minMaxResult {
+			int score;
+			int bestCol; // Perhaps the column isn't neccessary.
+		};
+
+		minMaxResult minMax(Board& working_board, int depth, bool player, bool turn) {
+			static const int largeVal = 10000000;
+			static const int fourInARowScore = 100000;
+
+			if (depth == 0) {
+				return { eval(working_board, player), -1 };;
+			}
+			
+			if (turn == player) {
+				int maxScore = -largeVal;
+				int bestCol = -1;
+				for (int col = 0; col < cols; col++) {
+					if (working_board.addPiece<true>(col)) {
+						if (isWin(col, working_board)) {
+							working_board.undoMove(col);
+							return { fourInARowScore * (depth + 1), col }; // * (depth + 1) makes AI tend to closer wins 
+						}
+
+						auto score = minMax(working_board, depth - 1, player, !turn);
+						working_board.undoMove(col);
+						if (score.score > maxScore) {
+							maxScore = score.score;
+							bestCol = col;
+						}
+					}
+				}
+				return { maxScore, bestCol };
+			}
+			else {
+				int minScore = largeVal;
+				int bestCol = -1;
+				for (int col = 0; col < cols; col++) {
+					if (working_board.addPiece<true>(col)) {
+						if (isWin(col, working_board)) {
+							working_board.undoMove(col);
+							return { -fourInARowScore * (depth + 1), col }; // * (depth + 1) makes AI tend to closer wins 
+						}
+						auto score = minMax(working_board, depth - 1, player, !turn);
+						working_board.undoMove(col);
+						if (score.score < minScore) {
+							minScore = score.score;
+							bestCol = col;
+						}
+					}
+				}
+				return { minScore, bestCol };
+			}
+
+		}
+
+
 
 	public:
 		GameController() = default;
@@ -253,6 +366,12 @@ namespace Connect4 {
 			return nTurn % 2 == 0; // true for player 1, false for player 2
 		}
 
+		int getAIMove(int depth) {
+			auto result = minMax(board, depth, board.bTurn, board.bTurn);
+			std::cout << "AI evaluated score: " << result.score << std::endl;
+			return result.bestCol;
+		}
+
 		bool placePiece(int col) {
 			if (board.addPiece<true>(col)) {
 				nTurn++;
@@ -261,53 +380,12 @@ namespace Connect4 {
 			return false; // Invalid
 		}
 
-		bool isWin(int col) {
-			int inARow = 1;
-			int origX = col;
-			int origY = board.getHeight(col) - 1;
-			int color = board.getPiece(origX, origY);
-
-			// check vertical
-			for (int y = origY - 1; y >= 0 && board.getPiece<true>(origX, y) == color; y--) {
-				inARow++;
-			}
-			if (inARow >= 4) return true;
-
-			// check horizontal
-			inARow = 1;
-			for (int x = origX - 1; x >= 0 && board.getPiece<true>(x, origY) == color; x--) {
-				inARow++;
-			}
-			for (int x = origX + 1; x < cols && board.getPiece<true>(x, origY) == color; x++) {
-				inARow++;
-			}
-			if (inARow >= 4) return true;
-
-			// check diagonal (top-left to bottom-right)
-			inARow = 1;
-			for (int x = origX - 1, y = origY + 1; x >= 0 && y >= 0 && board.getPiece<true>(x, y) == color; x--, y++) {
-				inARow++;
-			}
-			for (int x = origX + 1, y = origY - 1; x < cols && y < rows && board.getPiece<true>(x, y) == color; x++, y--) {
-				inARow++;
-			}
-			if (inARow >= 4) return true;
-
-			// check other diagonal (top-right to bottom-left)
-			inARow = 1;
-			for (int x = origX + 1, y = origY + 1; x >= 0 && y < rows && board.getPiece<true>(x, y) == color; x++, y++) {
-				inARow++;
-			}
-			for (int x = origX - 1, y = origY - 1; x < cols && y >= 0 && board.getPiece<true>(x, y) == color; x--, y--) {
-				inARow++;
-			}
-			if (inARow >= 4) return true;
-
-			return false;
-		}
-
 		int getEval() {
 			return eval();
+		}
+
+		bool isWin(int col) {
+			return isWin(col, board);
 		}
 
 		std::string repr() { // will overload << in the future, did not get it working right now
