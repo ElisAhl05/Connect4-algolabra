@@ -6,27 +6,6 @@
 #include <chrono>
 #define CONNECT4_DEBUG false
 
-/*
-Board:
-	static rows
-	static cols
-	turn
-
-	getPiece
-	isValidPos
-	addPiece
-	operator=
-
-Controller:
-	Board board
-
-	
-
-
-
-
-*/
-
 namespace Connect4 {
 	static const int rows = 6;
 	static const int cols = 7;
@@ -120,6 +99,42 @@ namespace Connect4 {
 			}
 			return std::string(result);
 		}
+
+		std::string const repr() {
+			static const char symbols[3] = { '.', 'X', 'O' };
+			static const char numChart[7] = { '1', '2', '3', '4', '5', '6', '7' };
+
+			static const int disWidth = cols + 3;
+			static const int disHeight = rows + 2;
+
+			auto getPos = [](int row, int col) {
+				return (rows - row) * disWidth + col + 1;
+				};
+
+			char result[disHeight * disWidth];
+
+			for (int c = 0; c < cols; ++c) {
+				result[getPos(-1, c)] = numChart[c];
+				result[getPos(rows, c)] = '-';
+			}
+
+			result[0] = '/';
+			result[disWidth - 2] = '\\';
+			result[disWidth - 1] = '\n';
+			result[disWidth * (disHeight - 1)] = '\\';
+			result[disWidth * disHeight - 2] = '/';
+
+			for (int r = rows - 1; r >= 0; --r) {
+				for (int c = 0; c < cols; ++c) {
+					result[getPos(r, c)] = symbols[getPiece(c, r)];
+				}
+				result[getPos(r, -1)] = '|';
+				result[getPos(r, cols)] = '|';
+				result[getPos(r, cols + 1)] = '\n';
+			}
+			result[disHeight * disWidth - 1] = '\0'; // Terminate string
+			return std::string(result);
+		}
 	};
 
 	class GameController {
@@ -184,7 +199,7 @@ namespace Connect4 {
 			static const int singleScore = 0; // I count them as useless
 			static const int doubleScore = 10;
 			static const int tripleScore = 100;
-			static const int quadScore = 10000;
+			static const int quadScore = 10000; // shouldn't actually occur.
 
 			int streaksFound[4] = { 0, 0, 0, 0 }; // 0: single, 1: double, 2: triple, 3: quad
 			int streak = 0;
@@ -445,40 +460,8 @@ namespace Connect4 {
 			return isWin(col, board);
 		}
 
-		std::string repr() { // will overload << in the future, did not get it working right now
-			static const char symbols[3] = { '.', 'X', 'O' };
-			static const char numChart[7] = { '1', '2', '3', '4', '5', '6', '7' };
-
-			static const int disWidth = cols + 3;
-			static const int disHeight = rows + 2;
-
-			auto getPos = [](int row, int col) {
-				return (rows - row) * disWidth + col + 1;
-				};
-
-			char result[disHeight * disWidth];
-
-			for (int c = 0; c < cols; ++c) {
-				result[getPos(-1, c)] = numChart[c];
-				result[getPos(rows, c)] = '-';
-			}
-
-			result[0] = '/';
-			result[disWidth - 2] = '\\';
-			result[disWidth - 1] = '\n';
-			result[disWidth * (disHeight - 1)] = '\\';
-			result[disWidth * disHeight - 2] = '/';
-
-			for (int r = rows - 1; r >= 0; --r) {
-				for (int c = 0; c < cols; ++c) {
-					result[getPos(r, c)] = symbols[board.getPiece(c, r)];
-				}
-				result[getPos(r, -1)] = '|';
-				result[getPos(r, cols)] = '|';
-				result[getPos(r, cols + 1)] = '\n';
-			}
-			result[disHeight * disWidth - 1] = '\0'; // Terminate string
-			return std::string(result);
+		inline std::string repr() { // will overload << in the future, did not get it working right now
+			return board.repr();
 		}
 	};
 }
