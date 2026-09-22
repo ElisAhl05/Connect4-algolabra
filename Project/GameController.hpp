@@ -4,7 +4,7 @@
 #include <map>
 #include <array>
 #include <chrono>
-#define CONNECT4_DEBUG false
+#define CONNECT4_DEBUG true
 
 namespace Connect4 {
 	static const int rows = 6;
@@ -94,8 +94,8 @@ namespace Connect4 {
 		std::string const hash() { // returns a string representation of the board state for hashing purposes
 			char result[15] = { 0 };
 			for (int c = 0; c < cols; c++) {
-				result[c * 2] = '@' + board[c][0] + board[c][1] * 3 + board[c][2] * 9;
-				result[c * 2 + 1] = '@' + board[c][3] + board[c][4] * 3 + board[c][5] * 9;
+				result[c * 2] = 1 + board[c][0] + board[c][1] * 3 + board[c][2] * 9; // without the 1 +, the string would suddenly get null-terminated.
+				result[c * 2 + 1] = 1 + board[c][3] + board[c][4] * 3 + board[c][5] * 9;
 			}
 			return std::string(result);
 		}
@@ -142,7 +142,7 @@ namespace Connect4 {
 		Board board;
 		int nTurn = 0;
 
-	private:
+	public:
 		std::map<std::string, int> bestMoves;
 
 		void resetBoard() {

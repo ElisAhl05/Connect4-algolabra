@@ -1,8 +1,12 @@
 #include <iostream>
 #include "GameController.hpp"
 #include <chrono>
+#include "testing/Testing.hpp"
+
 
 int main() {
+	testing::testHeuristic();
+
 	std::cout << "Welcome to Connect 4!" << std::endl;
 	std::cout << "You are Player 1 (X). The AI is Player 2 (O)." << std::endl;
 	std::cout << "AI will make a move within 2 milliseconds." << std::endl;
@@ -15,11 +19,11 @@ int main() {
 		std::cout << controller.repr() << std::endl;
 		std::cout << "Player " << (controller.getTurn() ? 1 : 2) << "'s turn. Enter column (1-7): ";
 		int col;
-		if (controller.getTurn() == player_turn && false) {
+		if (controller.getTurn() == player_turn) {
 			std::cin >> col; col--; // Adjust for 0-based index
 		}
 		else {
-			col = controller.getAIMove(std::chrono::milliseconds(2)); // AI depth can be adjusted
+			col = controller.getAIMove(4); // AI depth can be adjusted
 			std::cout << "AI chooses column: " << (col + 1) << std::endl;
 		}
 		if (!controller.placePiece(col)) {
