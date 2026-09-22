@@ -4,7 +4,7 @@
 #include <map>
 #include <array>
 #include <chrono>
-#define CONNECT4_DEBUG true
+#define CONNECT4_DEBUG false
 
 namespace Connect4 {
 	static const int rows = 6;
@@ -25,7 +25,7 @@ namespace Connect4 {
 		}
 
 		inline bool isValidPos(int column, int row) {
-			return (column >= 0) && (column < cols) && (row >= 0) && (row < colHeights[column]);
+			return (column >= 0) && (column < cols) && (row >= 0) && (row < rows);
 		}
 
 		inline int getHeight(int column) {
@@ -245,7 +245,7 @@ namespace Connect4 {
 					if (evaled_board.getPiece(x - i, i) == color)
 						streak++;
 					else {
-						if (streak) streaksFound[streak - 1]++;
+						if (streak > 0) streaksFound[streak - 1]++;
 						streak = 0;
 					}
 					i++;
@@ -258,7 +258,10 @@ namespace Connect4 {
 				streak = 0;
 				while (evaled_board.isValidPos(x - i, y + i)) {
 					if (evaled_board.getPiece(x - i, y + i) == color)
+					{
 						streak++;
+					}
+					
 					else {
 						if (streak) streaksFound[streak - 1]++;
 						streak = 0;
@@ -275,12 +278,12 @@ namespace Connect4 {
 					if (evaled_board.getPiece(x + i, i) == color)
 						streak++;
 					else {
-						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
+						if (streak > 0) streaksFound[streak - 1]++;
 						streak = 0;
 					}
 					i++;
 				}
-				if (streak > 0 && streak <= 4) {
+				if (streak) {
 					streaksFound[streak - 1]++;
 					streak = 0;
 				}
@@ -292,7 +295,7 @@ namespace Connect4 {
 					if (evaled_board.getPiece(i, y + i) == color)
 						streak++;
 					else {
-						if (streak > 0 && streak <= 4) streaksFound[streak - 1]++;
+						if (streak > 0) streaksFound[streak - 1]++;
 						streak = 0;
 					}
 					i++;
@@ -312,9 +315,9 @@ namespace Connect4 {
 			}
 
 			return streaksFound[0] * singleScore
-				+ streaksFound[1] * doubleScore
-				+ streaksFound[2] * tripleScore
-				+ streaksFound[3] * quadScore;
+				 + streaksFound[1] * doubleScore
+				 + streaksFound[2] * tripleScore
+				 + streaksFound[3] * quadScore;
 		}
 
 		inline int eval() {

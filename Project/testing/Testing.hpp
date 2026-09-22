@@ -1,7 +1,6 @@
 #pragma once
 #include "../GameController.hpp"
 #include "boards.hpp"
-#define CONNECT4_DEBUG true
 
 namespace testing
 {
