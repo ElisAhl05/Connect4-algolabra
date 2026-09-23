@@ -422,6 +422,16 @@ namespace Connect4 {
 			nTurn = 0;
 		}
 
+		void setBoard(Board& new_board) {
+			board = new_board;
+			nTurn = 0;
+			for (int x = 0; x < cols; x++) {
+				for (int y = 0; y < rows; y++) {
+					if (board.getPiece(x, y) != 0) nTurn++;
+				}
+			}
+		}
+
 		bool getTurn() {
 			return nTurn % 2 == 0; // true for player 1, false for player 2
 		}
@@ -429,7 +439,6 @@ namespace Connect4 {
 		int getAIMove(int depth) {
 			bestMoves.clear(); // Clear the map of best moves
 			auto result = minMax(board, depth, board.bTurn, board.bTurn, -100000000, 100000000);
-			std::cout << "AI evaluated score: " << result.score << std::endl;
 			return result.bestCol;
 		}
 
@@ -442,8 +451,6 @@ namespace Connect4 {
 				iterations++;
 				bestResult = minMax(board, iterations, board.bTurn, board.bTurn, -100000000, 100000000);
 			}
-			std::cout << "AI evaluated score: " << bestResult.score << std::endl;
-			std::cout << "AI did " << iterations << " iterations" << std::endl;
 			return bestResult.bestCol;
 		}
 
