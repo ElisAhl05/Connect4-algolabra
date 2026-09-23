@@ -2,6 +2,7 @@
 #include "../GameController.hpp"
 #include "boards.hpp"
 #include <iostream>
+#include <algorithm>
 
 namespace testing
 {
@@ -70,7 +71,7 @@ namespace testing
 			for (const auto& testPair : boards::avoidLossTestBoards) {
 				auto board = boards::convertToBoard(testPair.moves);
 				controller.setBoard(board);
-				int AI_move = controller.getAIMove(2); // Only does one layer
+				int AI_move = controller.getAIMove(2); // 2 layers needed to observe the opponent's moves
 				std::cout << "AI did move " << AI_move << ", correct move was " << testPair.best_move << std::endl;
 				passed_tests &= assert(testPair.best_move == AI_move);
 			}
@@ -81,8 +82,17 @@ namespace testing
 		bool testFindWin()
 		{
 			bool passed_tests = true;
+			Connect4::GameController controller;
 
 			std::cout << "Initiating heuristic testing" << std::endl;
+
+			for (const auto& testPair : boards::findWinTestBoards) {
+				auto board = boards::convertToBoard(testPair.moves);
+				controller.setBoard(board);
+				int AI_move = controller.getAIMove(1); // The opponent's next move is unneccessary, since there is a win-in-one
+				std::cout << "AI did move " << AI_move << ", correct move was " << testPair.best_move << std::endl;
+				passed_tests &= assert(testPair.best_move == AI_move);
+			}
 
 			return passed_tests;
 		}
@@ -99,8 +109,24 @@ namespace testing
 		bool testPlaysLegalMoves()
 		{
 			bool passed_tests = true;
+			Connect4::GameController controller;
 
 			std::cout << "Initiating legal move playing testing" << std::endl;
+			for (const auto& testPair : boards::findLegalMovesBoards) {
+				std::cout << "{ ";
+				for (auto i : testPair.moves) std::cout << i << ", ";
+				std::cout << "}\n";
+				auto board = boards::convertToBoard(testPair.moves);
+				controller.setBoard(board);
+				for (int i = 1; i < 7; i++) {
+					int AI_move = controller.getAIMove(i);
+					std::cout << AI_move << std::endl;
+					passed_tests &= assert(!(std::find(
+						testPair.illegal_moves.begin(), testPair.illegal_moves.end(),
+						AI_move) != testPair.illegal_moves.end())); // checks whether the illegal-moves vector contains the move in question
+				}
+			}
+
 
 			return passed_tests;
 		}
