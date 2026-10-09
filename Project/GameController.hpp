@@ -16,24 +16,24 @@ namespace Connect4 {
 		int colHeights[cols] = { 0 }; // Track the height of each column
 		int board[cols][rows] = { 0 }; // 0 for empty, 1 for player 1, 2 for player 2
 
-		inline bool isValidColumn(int column) {
+		inline bool isValidColumn(int column) { // checks if a column number is valid
 			return (column >= 0) && (column < cols);
 		}
 
-		inline bool isNotFullColumn(int column) {
+		inline bool isNotFullColumn(int column) { // checks whether a column has space for more pieces
 			return colHeights[column] < rows;
 		}
 
-		inline bool isValidPos(int column, int row) {
+		inline bool isValidPos(int column, int row) { // checks whether a position is inside the board
 			return (column >= 0) && (column < cols) && (row >= 0) && (row < rows);
 		}
 
-		inline int getHeight(int column) {
+		inline int getHeight(int column) { // returns height of column
 			return colHeights[column];
 		}
 
 		template <bool doCheck = false>
-		int getPiece(int column, int row) {
+		int getPiece(int column, int row) { // returns the piece at the given position, or -1 if the position is invalid (when doCheck is true)
 			if constexpr (doCheck) {
 				if (column >= 0 && column < cols && row >= 0 && row < colHeights[column]) {
 					return board[column][row];
@@ -62,7 +62,7 @@ namespace Connect4 {
 			}
 		}
 
-		Board& operator=(const Board& other) {
+		Board& operator=(const Board& other) { // copy another board
 			if (this != &other) {
 				for (int c = 0; c < cols; c++) {
 					colHeights[c] = other.colHeights[c];
@@ -85,7 +85,7 @@ namespace Connect4 {
 			return bTurn == other.bTurn;
 		}
 
-		void undoMove(int column) {
+		void undoMove(int column) { // removes the heighest piece of a column and switches the turn back
 			colHeights[column]--;
 			board[column][colHeights[column]] = 0; // Clear the piece
 			bTurn = !bTurn; // Switch back the turn
@@ -100,7 +100,7 @@ namespace Connect4 {
 			return std::string(result);
 		}
 
-		std::string const repr() {
+		std::string const repr() { // returns a string representation of the board for printing purposes
 			static const char symbols[3] = { '.', 'X', 'O' };
 			static const char numChart[7] = { '1', '2', '3', '4', '5', '6', '7' };
 
@@ -139,18 +139,19 @@ namespace Connect4 {
 
 	class GameController {
 	public:
-		Board board;
-		int nTurn = 0;
+		Board board; // the board that the controller uses
+		int nTurn = 0; // the number of moves that have been played
+		static const int fourInARowScore = 100000; // the heuristic score given to a four-in-a-row
 
 	public:
-		std::map<std::string, int> bestMoves;
+		std::map<std::string, int> bestMoves; // map used for storing best moves when doing iterative deepening
 
-		void resetBoard() {
+		void resetBoard() { // internal board reset
 			board = Board();
 			nTurn = 0;
 		}
 
-		bool isWin(int col, Board& checked_board) {
+		bool isWin(int col, Board& checked_board) { // checks if the last move in column col resulted in a win
 			int inARow = 1;
 			int origX = col;
 			int origY = checked_board.getHeight(col) - 1;
@@ -196,10 +197,11 @@ namespace Connect4 {
 		}
 
 		int evalColor(int color, Board& evaled_board) {
-			static const int singleScore = 0; // I count them as useless
+			// evaluates a board position from the perspective of a given player, returning a score based on the number of two- and three-in-a-rows found on the board
+			static const int singleScore = 0; // I've decided that lone pieces are worth nothing
 			static const int doubleScore = 10;
 			static const int tripleScore = 100;
-			static const int quadScore = 10000; // shouldn't actually occur.
+			static const int quadScore = 10000; // shouldn't actually occur, since the win check should catch it.
 
 			int streaksFound[4] = { 0, 0, 0, 0 }; // 0: single, 1: double, 2: triple, 3: quad
 			int streak = 0;
@@ -238,6 +240,7 @@ namespace Connect4 {
 				}
 			}
 			// check diagonals right-down to left-up
+			// check the diagonals that start on the bottom of the board
 			for (int x = 1; x < cols; x++) {
 				int i = 0;
 				streak = 0;
@@ -252,6 +255,7 @@ namespace Connect4 {
 				}
 				if (streak) streaksFound[streak - 1]++;
 			}
+			// checks that start on the right side of the board
 			int x = cols - 1;
 			for (int y = 1; y < rows - 1; y++) { // note the rows - 1 and the startX = 1: The bottom left and top right cornes cannot contain anything valuable
 				int i = 0;
@@ -271,7 +275,8 @@ namespace Connect4 {
 				if (streak) streaksFound[streak - 1]++;
 			}
 			// check diagonals left-down to right-up
-			for (int x = 0; x < cols - 1; x++) { // when x = columns - 1, the diagonal is one block large and thus unneccessary.
+			// check the diagonals that start on the bottom of the board
+			for (x = 0; x < cols - 1; x++) { // when x = columns - 1, the diagonal is one block large and thus unneccessary.
 				int i = 0;
 				streak = 0;
 				while (evaled_board.isValidPos(x + i, i)) {
@@ -288,6 +293,7 @@ namespace Connect4 {
 					streak = 0;
 				}
 			}
+			// check the diagonals that start on the left side of the board
 			for (int y = 1; y < rows - 1; y++) { // when y = rows - 1, the diagonal is one block large
 				int i = 0;
 				streak = 0;
@@ -320,22 +326,21 @@ namespace Connect4 {
 				 + streaksFound[3] * quadScore;
 		}
 
-		inline int eval() {
+		inline int eval() { // returns the score of the current board state, with positive values favoring player 1 and negative values favoring player 2
 			return evalColor(1, board) - evalColor(2, board); // Player 1 score - Player 2 score
 		}
 
-		inline int eval(Board& evaled_board, bool player = 1) {
+		inline int eval(Board& evaled_board, bool player = 1) { // returns the score of a given board state, with positive values favoring the given player and negative values favoring the opponent
 			return evalColor(2 - player, evaled_board) - evalColor(1 + player, evaled_board);
 		}
 
-		struct minMaxResult {
+		struct minMaxResult { // class that is used when returning pairs of a score and a column
 			int score;
-			int bestCol; // Perhaps the column isn't neccessary.
+			int bestCol;
 		};
 
 		minMaxResult minMax(Board& working_board, int depth, bool player, bool turn, int alpha, int beta) {
 			static const int largeVal = 10000000;
-			static const int fourInARowScore = 100000;
 			static const std::array<int, 7> columnOrdersIfMapped[7] = {
 				{ 0, 3, 2, 4, 1, 5, 6 }, // If the board already has a best move stored (namely 0),
 				{ 1, 3, 2, 4, 5, 0, 6 }, // the first row will be used for ordering checks. If the best
@@ -347,7 +352,7 @@ namespace Connect4 {
 			};
 
 			if (depth == 0) {
-				return { eval(working_board, player), -1 };;
+				return { eval(working_board, player), -1 };
 			}
 			auto hash_value = working_board.hash();
 			std::array<int, 7> priorityOrder = { 3, 2, 4, 1, 5, 0, 6 }; // default priority, starting in the middle
@@ -357,16 +362,15 @@ namespace Connect4 {
 			if (turn == player) {
 				int max_score = -largeVal;
 				int bestCol = -1;
-				for (int col : priorityOrder) {
+				for (int col : priorityOrder) { // walks through every column in the priority order and evaluating the score of the move.
 					if (working_board.addPiece<true>(col)) {
-						if (isWin(col, working_board)) {
+						if (isWin(col, working_board)) { // if a move results in a win, stop searching since no better move can be found
 							working_board.undoMove(col);
-							bestMoves[working_board.hash()] = col;
-							int score = fourInARowScore * (depth + 1);
+							bestMoves[hash_value] = col; // Store the best move for this board state
+							int score = fourInARowScore * depth; // * depth makes AI prefer closer wins
 							alpha = alpha > score ? alpha : score; // Update alpha
-							return { score, col }; // * (depth + 1) makes AI tend to closer wins 
+							return { score, col };
 						}
-
 						auto score = minMax(working_board, depth - 1, player, !turn, alpha, beta);
 						working_board.undoMove(col);
 						if (score.score > max_score) {
@@ -389,10 +393,10 @@ namespace Connect4 {
 					if (working_board.addPiece<true>(col)) {
 						if (isWin(col, working_board)) {
 							working_board.undoMove(col);
-							bestMoves[working_board.hash()] = col;
-							int score = -fourInARowScore * (depth + 1);
+							bestMoves[hash_value] = col;
+							int score = -fourInARowScore * depth;
 							beta = beta < score ? beta : score; // Update beta
-							return { score, col }; // * (depth + 1) makes AI tend to closer wins 
+							return { score, col };
 						}
 						auto score = minMax(working_board, depth - 1, player, !turn, alpha, beta);
 						working_board.undoMove(col);
@@ -436,22 +440,24 @@ namespace Connect4 {
 			return nTurn % 2 == 0; // true for player 1, false for player 2
 		}
 
-		int getAIMove(int depth) {
+		minMaxResult getAIMove(int depth) { // run with a fixed depth
 			bestMoves.clear(); // Clear the map of best moves
 			auto result = minMax(board, depth, board.bTurn, board.bTurn, -100000000, 100000000);
-			return result.bestCol;
+			return result;
 		}
 
-		int getAIMove(std::chrono::milliseconds timeLimit) {
+		minMaxResult getAIMove(std::chrono::milliseconds timeLimit) { // run with iterative deepening
 			minMaxResult bestResult = { -10000000, -1 };
 			auto start = std::chrono::high_resolution_clock::now();
 			int iterations = 0;
 			bestMoves.clear(); // Clear the map of best moves
-			while (std::chrono::high_resolution_clock::now() - start < timeLimit && (6 * 7 - nTurn - iterations) > 0) {
+			while (std::chrono::high_resolution_clock::now() - start < timeLimit && (6 * 7 - nTurn - iterations) > 0) { // stops when board is full or time limit is reached.
 				iterations++;
 				bestResult = minMax(board, iterations, board.bTurn, board.bTurn, -100000000, 100000000);
+				if (bestResult.score >= fourInARowScore) break; // if a winning move is found, there is no need to continue deeper
 			}
-			return bestResult.bestCol;
+			std::cout << "AI made " << iterations << " iterations" << std::endl;
+			return bestResult;
 		}
 
 		bool placePiece(int col) {
