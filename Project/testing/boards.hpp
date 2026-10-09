@@ -135,7 +135,7 @@ namespace testing
 			int best_move = 0;
 		};
 
-		std::vector<findMovesTestPair> findWinTestBoards = { // boards used for finding wins further away
+		std::vector<findMovesTestPair> findWinTestBoards = { // boards used for finding wins one move away
 			{ { 3, 2, 2, 3, 0, 3, 3, 4, 2, 2, 4, 4, 5, 5, 6, 5, 0 }, 5 },
 		  /*/-------\
 			|.......|
