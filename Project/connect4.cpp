@@ -29,7 +29,9 @@ int main() {
 			if (input == "u") { // undo move
 				controller.board.undoMove(moves.back());
 				moves.pop_back();
-				controller.nTurn--;
+				controller.board.undoMove(moves.back());
+				moves.pop_back();
+				controller.nTurn -= 2;
 				continue;
 			}
 			col = std::stoi(input); // convert string to integer
