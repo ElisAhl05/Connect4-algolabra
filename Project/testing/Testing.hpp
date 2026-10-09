@@ -80,7 +80,7 @@ namespace testing
 			for (const auto& testPair : boards::findWinTestBoards) {
 				auto board = boards::convertToBoard(testPair.moves);
 				controller.setBoard(board);
-				AI_move = controller.getAIMove(1); // The opponent's next move is unneccessary, since there is a win-in-one
+				auto AI_move = controller.getAIMove(1); // The opponent's next move is unneccessary, since there is a win-in-one
 				std::cout << "AI did move " << AI_move.bestCol << ", correct move was " << testPair.best_move << std::endl;
 				passed_tests &= assert(testPair.best_move == AI_move.bestCol);
 				passed_tests &= assert(AI_move.score == Connect4::GameController::fourInARowScore);
