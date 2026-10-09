@@ -130,12 +130,12 @@ namespace testing
 			\1234567/*/
 		};
 
-		struct findMoveTestPair {
+		struct findMovesTestPair {
 			std::vector<int> moves;
 			int best_move = 0;
 		};
 
-		std::vector<findMoveTestPair> findWinTestBoards = {
+		std::vector<findMovesTestPair> findWinTestBoards = { // boards used for finding wins further away
 			{ { 3, 2, 2, 3, 0, 3, 3, 4, 2, 2, 4, 4, 5, 5, 6, 5, 0 }, 5 },
 		  /*/-------\
 			|.......|
@@ -183,7 +183,7 @@ namespace testing
 			\1234567/*/
 		};
 
-		std::vector<findMoveTestPair> avoidLossTestBoards = {
+		std::vector<findMovesTestPair> avoidLossTestBoards = {
 			{ { 3, 1, 1, 2, 2, 0, 0 }, 3 },
 		  /*/-------\
 			|.......|
@@ -290,6 +290,50 @@ namespace testing
 			|.XX.OOX|
 			|OOO.XXO|
 			|XXO.OXX|
+			\1234567/*/
+		};
+
+		struct findFartherWinPair {
+			std::vector<int> moves;
+			std::vector<int> winning_moves; // the streak that leads to victory, including opponent's moves
+		};
+
+		std::vector<findFartherWinPair> findFartherWinBoards = {
+			{ { 4, 5, 4, 0, 4, 4, 3, 4, 6, 6 }, { 3, 1, 5, 0, 3, 3, 5, 0, 6 } },
+		  /*/-------\
+			|.......|
+			|....O..|
+			|....O..|
+			|....X..|
+			|....X.O|
+			|O..XXOX|
+			\1234567/*/
+			{ { 3, 2, 3, 6, 4, 0, 4, 0, 4, 4 }, { 3, 3, 2, 0, 0, 6, 1, 3, 1 } },
+		  /*/-------\
+			|.......|
+			|.......|
+			|....O..|
+			|....X..|
+			|O..XX..|
+			|O.OXX.O|
+			\1234567/*/
+			{ { 0, 1, 2, 2, 0, 2, 4, 4, 4 }, { 1, 0, 0, 1, 4, 2, 3, 3, 3 } },
+		  /*/-------\
+			|.......|
+			|.......|
+			|.......|
+			|..O.X..|
+			|X.O.O..|
+			|XOX.X..|
+			\1234567/*/
+			{ { 3, 3, 2, 1, 2, 5, 4, 4, 1, 6, 6, 5, 1 }, { 5, 5, 4, 1, 1, 2, 2, 2, 3 } }
+		  /*/-------\
+			|.......|
+			|.......|
+			|.......|
+			|.X.....|
+			|.XXOOOX|
+			|.OXXXOO|
 			\1234567/*/
 		};
 	}
